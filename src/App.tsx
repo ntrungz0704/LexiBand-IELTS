@@ -27,7 +27,11 @@ import {
   CloudLightning,
   Cloud,
   Check,
-  PenTool
+  PenTool,
+  Home,
+  User,
+  Search,
+  Bell
 } from "lucide-react";
 import Dashboard from "./components/Dashboard";
 import Library from "./components/Library";
@@ -72,7 +76,7 @@ function getSeededStreak(): StreakData {
 export default function App() {
   const [user, setUser] = useState<{ uid: string; email: string; displayName: string } | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "library" | "practice" | "writing" | "profile">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "library" | "practice" | "writing" | "profile" | "settings">("dashboard");
   const [progress, setProgress] = useState<UserProgress>({});
   const [streak, setStreak] = useState<StreakData>({ currentStreak: 0, longestStreak: 0, history: {} });
   const [selectedWordFromLib, setSelectedWordFromLib] = useState<Word | null>(null);
@@ -84,6 +88,24 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
+  const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
+  const [accent, setAccent] = useState<"en-US" | "en-GB">(() => {
+    return (localStorage.getItem("lexiband_accent") as "en-US" | "en-GB") || "en-US";
+  });
+
+  useEffect(() => {
+    const syncAccent = () => {
+      setAccent((localStorage.getItem("lexiband_accent") as "en-US" | "en-GB") || "en-US");
+    };
+    window.addEventListener("accent_changed", syncAccent);
+    return () => window.removeEventListener("accent_changed", syncAccent);
+  }, []);
+
+  const handleSetAccent = (newAccent: "en-US" | "en-GB") => {
+    setAccent(newAccent);
+    localStorage.setItem("lexiband_accent", newAccent);
+    window.dispatchEvent(new Event("accent_changed"));
+  };
 
   // PWA installation states
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -555,48 +577,333 @@ export default function App() {
   return (
     <div className={`min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden w-full max-w-full ${isDarkMode ? "dark bg-slate-900 text-slate-100" : ""}`}>
       
-      {/* Mobile Top Header */}
-      <header className="lg:hidden sticky top-0 z-40 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between shadow-xxs">
-        <div className="flex items-center gap-2">
-          <div className="bg-blue-600 p-1.5 rounded-lg text-white">
-            <BookOpen className="w-4 h-4" />
-          </div>
-          <span className="text-sm font-black tracking-tight text-slate-900">LexiBand</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full text-xs font-bold border border-amber-100">
-            <span>{streak.currentStreak} 🔥</span>
-          </div>
+      {/* Mobile Top Header: Sticky & Compact (Mobile < 768px) */}
+      <header className="md:hidden sticky top-0 z-40 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between shadow-xxs">
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg bg-slate-100 cursor-pointer"
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            aria-label="Menu"
           >
-            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="bg-blue-600 p-1.5 rounded-lg text-white">
+              <BookOpen className="w-4 h-4" />
+            </div>
+            <span className="text-sm font-black tracking-tight text-slate-900">
+              LexiBand <span className="text-[9px] bg-blue-50 text-blue-700 px-1 py-0.2 rounded font-black border border-blue-100">IELTS</span>
+            </span>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {/* Expandable Search Button */}
+          <button
+            onClick={() => setIsSearchOverlayOpen(true)}
+            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            title="Tìm kiếm"
+          >
+            <Search className="w-4.5 h-4.5" />
+          </button>
+
+          {/* Notification hub */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setActiveTab("dashboard");
+                // Trigger scroll or notification highlight in dashboard
+                const el = document.getElementById("inapp-notification-toast");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            >
+              <Bell className="w-4.5 h-4.5" />
+              <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-rose-500 text-white rounded-full text-[8px] font-black flex items-center justify-center border border-white">
+                3
+              </span>
+            </button>
+          </div>
+
+          {/* Avatar button */}
+          <button
+            onClick={() => setActiveTab("settings")}
+            className="w-7 h-7 rounded-full bg-indigo-600 text-white font-black text-[10px] flex items-center justify-center border border-slate-100 shadow-xxs shrink-0 uppercase cursor-pointer"
+          >
+            {user ? (user.displayName.split(" ").map(n => n[0]).join("").substring(0, 2)) : "NT"}
           </button>
         </div>
       </header>
 
-      {/* Backdrop for mobile menu */}
-      {isMobileMenuOpen && (
-        <div 
-          onClick={() => setIsMobileMenuOpen(false)}
-          className="lg:hidden fixed inset-0 z-20 bg-slate-900/40 backdrop-blur-[2px] transition-opacity duration-300"
-        />
-      )}
+      {/* Mobile Slide Drawer Menu Backdrop (Mobile < 768px) */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="md:hidden fixed inset-0 z-45 bg-slate-900/40 backdrop-blur-[2px]"
+            />
+            <motion.aside 
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 260 }}
+              className="md:hidden fixed left-0 top-0 bottom-0 w-[280px] bg-white z-50 flex flex-col justify-between p-6 shadow-2xl"
+            >
+              <div className="space-y-8">
+                {/* Header inside drawer */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 p-2.5 rounded-xl text-white shadow-md">
+                      <BookOpen className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h1 className="text-base font-black tracking-tight text-slate-900 flex items-center gap-1">
+                        LexiBand <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded-md font-black border border-blue-100">IELTS</span>
+                      </h1>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Vocab Master 2026</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
-      {/* Main Responsive Container */}
-      <div className="lg:grid lg:grid-cols-[260px_1fr] min-h-screen w-full max-w-full overflow-x-hidden">
-        
-        {/* SIDEBAR NAVIGATION: Desktop-first styled exactly like Raycast / Linear */}
-        <aside className={`fixed lg:static left-0 top-0 bottom-0 w-[280px] lg:w-auto z-30 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"} transition-transform duration-300 bg-white border-r border-slate-100 flex flex-col justify-between p-6 shrink-0 shadow-xl lg:shadow-none`}>
-          
-          <div className="space-y-8">
-            {/* Sidebar Logo */}
+                {/* Nav Links in drawer */}
+                <nav className="space-y-1">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block pl-2 mb-2">Workspace</span>
+                  {[
+                    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+                    { id: "library", label: "Vocabulary", icon: Compass },
+                    { id: "practice", label: "Practice Board", icon: Flame },
+                    { id: "writing", label: "IELTS Writing Task 2", icon: PenTool },
+                    { id: "profile", label: "Learner Profile", icon: BookOpen },
+                    { id: "settings", label: "Settings & Profile", icon: Settings }
+                  ].map((link) => {
+                    const isActive = activeTab === link.id && (link.id !== "practice" || !practiceTrigger);
+                    return (
+                      <button
+                        key={link.id}
+                        onClick={() => {
+                          setActiveTab(link.id as any);
+                          setPracticeTrigger(null);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`w-full px-3.5 py-3 rounded-2xl text-xs font-bold flex items-center gap-3.5 transition-all cursor-pointer ${
+                          isActive 
+                            ? "bg-blue-50 text-blue-600 border border-blue-100/40" 
+                            : "text-slate-500 hover:text-slate-800 hover:bg-slate-50 border border-transparent"
+                        }`}
+                      >
+                        <link.icon className={`w-4.5 h-4.5 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
+                        <span>{link.label}</span>
+                      </button>
+                    );
+                  })}
+
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block pl-2 mt-6 mb-2">Shortcuts</span>
+                  {[
+                    { mode: "srs", type: "all", label: "Flashcard SRS", icon: Layers },
+                    { mode: "quiz", label: "Quiz Game", icon: Sparkles },
+                    { mode: "fill-blank", label: "Fill in Sentence", icon: Plus }
+                  ].map((shortcut) => {
+                    const isActive = activeTab === "practice" && practiceTrigger?.mode === shortcut.mode;
+                    return (
+                      <button
+                        key={shortcut.mode}
+                        onClick={() => {
+                          handleQuickPractice(shortcut.mode as any, shortcut.type as any);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`w-full px-3.5 py-3 rounded-2xl text-xs font-bold flex items-center gap-3.5 transition-all cursor-pointer ${
+                          isActive 
+                            ? "bg-blue-50 text-blue-600 border border-blue-100/40" 
+                            : "text-slate-500 hover:text-slate-800 hover:bg-slate-50 border border-transparent"
+                        }`}
+                      >
+                        <shortcut.icon className={`w-4.5 h-4.5 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
+                        <span>{shortcut.label}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              {/* Drawer settings footer */}
+              <div className="space-y-4 pt-6 border-t border-slate-100">
+                <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-2xl text-xxs font-bold text-slate-500">
+                  <span className="flex items-center gap-1.5">
+                    <Sun className="w-3.5 h-3.5 text-amber-500" />
+                    Light Slate Theme
+                  </span>
+                  <span className="text-xxs bg-white text-slate-400 px-1.5 py-0.5 rounded-sm border border-slate-200 uppercase font-black">2026</span>
+                </div>
+                
+                <div className="flex items-center justify-between bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-blue-650 text-white font-black text-xs flex items-center justify-center uppercase">
+                      {user ? (user.displayName.split(" ").map(n => n[0]).join("").substring(0, 2)) : "NT"}
+                    </div>
+                    <div className="text-left min-w-0">
+                      <p className="text-xs font-black text-slate-800 truncate">{user?.displayName}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Expandable Full-Screen Search Overlay (Mobile < 768px) */}
+      <AnimatePresence>
+        {isSearchOverlayOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 15 }}
+            className="md:hidden fixed inset-0 bg-slate-50 z-50 flex flex-col p-4 overflow-y-auto"
+          >
+            {/* Header */}
             <div className="flex items-center gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Tìm từ vựng trong kho học thuật..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus
+                  className="w-full pl-9 pr-8 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs font-bold focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-650"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setIsSearchOverlayOpen(false);
+                  setSearchQuery("");
+                }}
+                className="text-xs font-black text-slate-500 hover:text-slate-800 px-2 cursor-pointer"
+              >
+                Hủy
+              </button>
+            </div>
+
+            {/* Suggestions & Recent Searches */}
+            {!searchQuery ? (
+              <div className="mt-6 space-y-6">
+                <div>
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-3.5">Recent Searches</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {["sustain", "infrastructure", "analyze", "significant", "environment"].map((term) => (
+                      <button
+                        key={term}
+                        onClick={() => setSearchQuery(term)}
+                        className="px-3 py-1.5 bg-white border border-slate-200 hover:border-blue-200 rounded-xl text-xxs font-bold text-slate-600 hover:text-blue-600 transition-all shadow-xxs cursor-pointer"
+                      >
+                        {term}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-3.5">Hot Suggestions</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["empirical", "scrutinize", "democratize", "advocate"].map((term) => (
+                      <button
+                        key={term}
+                        onClick={() => {
+                          setSearchQuery(term);
+                          setActiveTab("library");
+                          setIsSearchOverlayOpen(false);
+                        }}
+                        className="flex items-center gap-2 p-3 bg-white border border-slate-100 hover:border-indigo-150 rounded-2xl text-left cursor-pointer transition-all shadow-xxs"
+                      >
+                        <span className="text-indigo-500 font-bold">✨</span>
+                        <span className="text-xs font-bold text-slate-700">{term}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Search Results list
+              <div className="mt-6 space-y-2">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-2">
+                  Matching Words ({VOCABULARY_SEED.filter(w => w.word.toLowerCase().includes(searchQuery.toLowerCase())).length})
+                </h4>
+                <div className="space-y-2">
+                  {VOCABULARY_SEED.filter(w => w.word.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 10).map((word) => (
+                    <div
+                      key={word.id}
+                      onClick={() => {
+                        setSearchQuery(word.word);
+                        setActiveTab("library");
+                        setIsSearchOverlayOpen(false);
+                      }}
+                      className="p-3.5 bg-white border border-slate-100 hover:border-blue-200 rounded-2xl cursor-pointer transition-all flex justify-between items-center shadow-xxs"
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-extrabold text-slate-800 text-xs">{word.word}</span>
+                          <span className="text-[9px] text-slate-400 italic">({word.partOfSpeech || "n."})</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">{word.meaning}</p>
+                      </div>
+                      <span className="text-xxs font-black px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-500 rounded-full">
+                        {word.band === "0.0-4.0" ? "B1" : word.band === "4.5-5.5" ? "B2" : "C1"}
+                      </span>
+                    </div>
+                  ))}
+                  {VOCABULARY_SEED.filter(w => w.word.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                    <div className="text-center py-12 space-y-2">
+                      <p className="text-2xl">🔍</p>
+                      <p className="text-xs font-bold text-slate-400">Không tìm thấy từ vựng nào khớp</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Main Responsive Grid Layout Shell */}
+      <div className="md:grid md:grid-cols-[80px_1fr] lg:grid-cols-[260px_1fr] min-h-screen w-full max-w-full overflow-x-hidden">
+        
+        {/* SIDEBAR NAVIGATION: Desktop-first & Collapses to Slim Icon Mode on Tablet */}
+        <aside className="hidden md:flex flex-col justify-between bg-white border-r border-slate-100 p-4 lg:p-6 shrink-0 md:w-[80px] lg:w-[260px] sticky top-0 h-screen z-30 transition-all duration-300">
+          
+          <div className="space-y-8 flex flex-col items-center lg:items-stretch">
+            {/* Sidebar Logo */}
+            <div className="flex items-center gap-3 md:max-lg:justify-center">
               <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 p-2.5 rounded-xl text-white shadow-md">
                 <BookOpen className="w-5 h-5" />
               </div>
-              <div>
+              <div className="md:max-lg:hidden">
                 <h1 className="text-base font-black tracking-tight text-slate-900 flex items-center gap-1">
                   LexiBand <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded-md font-black border border-blue-100">IELTS</span>
                 </h1>
@@ -605,8 +912,8 @@ export default function App() {
             </div>
 
             {/* Sidebar Links Grid */}
-            <nav className="space-y-1">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block pl-2 mb-2">Workspace</span>
+            <nav className="space-y-1 w-full">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block pl-2 mb-2 md:max-lg:hidden">Workspace</span>
               {[
                 { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
                 { id: "library", label: "Vocabulary", icon: Compass },
@@ -614,30 +921,29 @@ export default function App() {
                 { id: "writing", label: "IELTS Writing", icon: PenTool },
                 { id: "profile", label: "Learner Profile", icon: BookOpen }
               ].map((link) => {
-                // Dim Workspace buttons if a specific shortcut practice trigger is active
                 const isActive = activeTab === link.id && (link.id !== "practice" || !practiceTrigger);
                 return (
                   <button
                     key={link.id}
                     onClick={() => {
                       setActiveTab(link.id as any);
-                      setPracticeTrigger(null); // Clear shortcut trigger when visiting workspace directly
+                      setPracticeTrigger(null);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-3 transition-all cursor-pointer ${
+                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-3 transition-all cursor-pointer md:max-lg:justify-center md:max-lg:py-3.5 ${
                       isActive 
                         ? "bg-blue-50 text-blue-600 shadow-xxs border border-blue-100/40" 
                         : "text-slate-500 hover:text-slate-800 hover:bg-slate-50 border border-transparent"
                     }`}
+                    title={link.label}
                   >
                     <link.icon className={`w-4.5 h-4.5 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
-                    <span>{link.label}</span>
+                    <span className="md:max-lg:hidden">{link.label}</span>
                   </button>
                 );
               })}
 
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block pl-2 mt-6 mb-2">Shortcuts</span>
-              
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block pl-2 mt-6 mb-2 md:max-lg:hidden">Shortcuts</span>
               {[
                 { mode: "srs", type: "all", label: "Flashcard SRS", icon: Layers },
                 { mode: "quiz", label: "Quiz Game", icon: Sparkles },
@@ -651,14 +957,15 @@ export default function App() {
                       handleQuickPractice(shortcut.mode as any, shortcut.type as any);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-3 transition-all cursor-pointer ${
+                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-3 transition-all cursor-pointer md:max-lg:justify-center md:max-lg:py-3.5 ${
                       isActive 
                         ? "bg-blue-50 text-blue-600 shadow-xxs border border-blue-100/40" 
                         : "text-slate-500 hover:text-slate-800 hover:bg-slate-50 border border-transparent"
                     }`}
+                    title={shortcut.label}
                   >
                     <shortcut.icon className={`w-4.5 h-4.5 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
-                    <span>{shortcut.label}</span>
+                    <span className="md:max-lg:hidden">{shortcut.label}</span>
                   </button>
                 );
               })}
@@ -668,19 +975,19 @@ export default function App() {
                   setIsSourceModalOpen(true);
                   setIsMobileMenuOpen(false);
                 }}
-                className="w-full px-3 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-50 flex items-center gap-3 transition-all cursor-pointer mt-1"
+                className="w-full px-3 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-50 flex items-center gap-3 transition-all cursor-pointer mt-1 md:max-lg:justify-center md:max-lg:py-3.5"
+                title="Nguồn học thuật"
               >
                 <BookOpen className="w-4.5 h-4.5 text-indigo-500 shrink-0" />
-                <span className="text-indigo-600 font-bold">Nguồn Học Thuật</span>
+                <span className="text-indigo-600 font-bold md:max-lg:hidden">Nguồn Học Thuật</span>
               </button>
             </nav>
           </div>
 
           {/* Sidebar Footer Elements */}
-          <div className="space-y-4 pt-6 border-t border-slate-100">
-            
+          <div className="space-y-4 pt-6 border-t border-slate-100 flex flex-col items-center lg:items-stretch">
             {/* Display / Accent Choice */}
-            <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-2xl border border-slate-100 text-xxs font-bold text-slate-500">
+            <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-2xl border border-slate-100 text-xxs font-bold text-slate-500 w-full md:max-lg:hidden">
               <span className="flex items-center gap-1.5">
                 <Sun className="w-3.5 h-3.5 text-amber-500" />
                 Light Slate Theme
@@ -689,12 +996,12 @@ export default function App() {
             </div>
 
             {/* User Account Card */}
-            <div className="flex items-center justify-between bg-slate-50/50 p-2.5 rounded-2xl border border-slate-100 overflow-hidden">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center border-2 border-white shadow-sm shrink-0 uppercase">
+            <div className="flex items-center justify-between bg-slate-50/50 p-2.5 rounded-2xl border border-slate-100 overflow-hidden w-full md:max-lg:bg-transparent md:max-lg:border-none md:max-lg:p-0 md:max-lg:flex-col md:max-lg:gap-3">
+              <div className="flex items-center gap-2.5 min-w-0 md:max-lg:justify-center">
+                <div className="w-9 h-9 rounded-full bg-blue-650 text-white font-black text-xs flex items-center justify-center border-2 border-white shadow-sm shrink-0 uppercase">
                   {user ? (user.displayName.split(" ").map(n => n[0]).join("").substring(0, 2)) : "NT"}
                 </div>
-                <div className="text-left min-w-0">
+                <div className="text-left min-w-0 md:max-lg:hidden">
                   <p className="text-xs font-black text-slate-800 truncate">{user?.displayName || "Học viên"}</p>
                   <p className="text-[9px] text-slate-400 font-bold truncate">{user?.email || "email@example.com"}</p>
                 </div>
@@ -707,15 +1014,14 @@ export default function App() {
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
-
           </div>
         </aside>
 
         {/* MAIN PANEL */}
-        <div className="flex flex-col min-h-screen overflow-y-auto w-full max-w-full overflow-x-hidden">
+        <div className="flex flex-col min-h-screen overflow-y-auto w-full max-w-full overflow-x-hidden pb-16 md:pb-0">
           
           {/* Main Workspace Frame */}
-          <main className="flex-1 max-w-[1700px] mx-auto px-4 sm:px-8 xl:px-12 py-8 w-full space-y-8">
+          <main className="flex-1 max-w-[1700px] mx-auto px-4 sm:px-8 xl:px-12 py-6 md:py-8 w-full space-y-8">
             
             {activeTab === "dashboard" && (
               <Dashboard 
@@ -740,6 +1046,8 @@ export default function App() {
                 onStartReview={handleStartReview}
                 onToggleStar={handleToggleStar}
                 learningPlan={learningPlan}
+                initialSearchQuery={searchQuery}
+                onClearSearchQuery={() => setSearchQuery("")}
               />
             )}
 
@@ -773,6 +1081,100 @@ export default function App() {
                   setActiveTab("practice");
                 }}
               />
+            )}
+
+            {activeTab === "settings" && (
+              <div className="max-w-2xl mx-auto p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xs text-slate-800 dark:text-slate-100 space-y-6">
+                <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-2xl">
+                    <User className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">Thiết lập tài khoản</h2>
+                    <p className="text-xs text-slate-400">Quản lý cấu hình học tập cá nhân</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Profile info card */}
+                  <div className="flex items-center gap-3.5 p-4 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <div className="w-12 h-12 rounded-full bg-blue-600 text-white font-black text-sm flex items-center justify-center border-2 border-white shadow-sm shrink-0 uppercase">
+                      {user ? (user.displayName.split(" ").map(n => n[0]).join("").substring(0, 2)) : "NT"}
+                    </div>
+                    <div className="text-left min-w-0">
+                      <p className="text-sm font-black text-slate-800 dark:text-slate-100 truncate">{user?.displayName || "Học viên"}</p>
+                      <p className="text-[10px] text-slate-400 font-bold truncate">{user?.email || "email@example.com"}</p>
+                    </div>
+                  </div>
+
+                  {/* Accent choice */}
+                  <div className="p-4 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200">Giọng đọc phát âm (Accent)</h3>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-400 mt-0.5">Chọn US hoặc UK cho giọng đọc từ vựng</p>
+                    </div>
+                    <div className="bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg flex border border-slate-200 dark:border-slate-700">
+                      <button
+                        onClick={() => handleSetAccent("en-US")}
+                        className={`px-3 py-1.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${
+                          accent === "en-US" ? "bg-white dark:bg-slate-900 text-blue-650 shadow-xs" : "text-slate-400"
+                        }`}
+                      >
+                        Mỹ (US)
+                      </button>
+                      <button
+                        onClick={() => handleSetAccent("en-GB")}
+                        className={`px-3 py-1.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${
+                          accent === "en-GB" ? "bg-white dark:bg-slate-900 text-blue-650 shadow-xs" : "text-slate-400"
+                        }`}
+                      >
+                        Anh (UK)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* PWA Install */}
+                  {deferredPrompt && (
+                    <button
+                      onClick={handleInstallApp}
+                      className="w-full p-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 rounded-2xl flex items-center justify-between text-xs font-bold transition-all hover:bg-emerald-100/50 cursor-pointer shadow-xxs"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span>📲</span> Cài đặt ứng dụng trên điện thoại
+                      </span>
+                      <span>Cài đặt &rarr;</span>
+                    </button>
+                  )}
+
+                  {/* Reset Progress */}
+                  <div className="p-4 border border-rose-100 dark:border-rose-900/30 bg-rose-50/25 dark:bg-rose-950/10 rounded-2xl space-y-2">
+                    <h3 className="text-xs font-bold text-rose-800 dark:text-rose-455">Xóa dữ liệu học tập</h3>
+                    <p className="text-[10px] text-rose-600 dark:text-rose-400 leading-normal">
+                      Hành động này sẽ xóa vĩnh viễn tiến trình học, lịch sử ôn tập SRS và streak hiện tại của bạn.
+                    </p>
+                    <button
+                      onClick={() => {
+                        if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ tiến trình học tập? Tất cả từ vựng sẽ được đặt lại về trạng thái mới.")) {
+                          handleResetProgress();
+                          alert("Đã xóa tiến trình thành công!");
+                        }
+                      }}
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-xs"
+                    >
+                      Xóa dữ liệu tiến trình
+                    </button>
+                  </div>
+
+                  {/* Logout */}
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-2 mt-4 shadow-sm"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Đăng xuất tài khoản</span>
+                  </button>
+                </div>
+              </div>
             )}
 
           </main>
@@ -1100,6 +1502,40 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Mobile Bottom Navigation Bar (Mobile < 768px) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-100 px-4 py-2 flex items-center justify-around shadow-lg">
+        {[
+          { id: "dashboard", label: "Home", icon: Home },
+          { id: "library", label: "Vocabulary", icon: Compass },
+          { id: "practice", label: "Practice", icon: Flame },
+          { id: "profile", label: "Progress", icon: TrendingUp },
+          { id: "settings", label: "Profile", icon: User }
+        ].map((item) => {
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id as any);
+                setPracticeTrigger(null);
+              }}
+              className="flex flex-col items-center gap-1 cursor-pointer relative py-1 transition-all"
+            >
+              <item.icon className={`w-5 h-5 transition-transform duration-200 ${isActive ? "text-blue-600 scale-110" : "text-slate-400"}`} />
+              <span className={`text-[9px] tracking-tight transition-colors duration-200 ${isActive ? "text-blue-600 font-extrabold" : "text-slate-400"}`}>
+                {item.label}
+              </span>
+              {isActive && (
+                <motion.span
+                  layoutId="activeTabIndicator"
+                  className="absolute bottom-0 w-1 h-1 bg-blue-600 rounded-full"
+                />
+              )}
+            </button>
+          );
+        })}
+      </nav>
 
     </div>
   );

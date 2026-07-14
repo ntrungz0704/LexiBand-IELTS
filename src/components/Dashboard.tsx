@@ -39,7 +39,9 @@ import {
   Sparkle,
   X,
   Plus,
-  Compass
+  Compass,
+  Check,
+  Mic
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Word, UserProgress, StreakData, IELTS_BANDS, formatIELTSBand } from "../types";
@@ -214,6 +216,18 @@ export default function Dashboard({
     if (!currentUnit) return [];
     return currentUnit.wordIds.map(id => words.find(w => w.id === id)).filter(Boolean) as Word[];
   }, [currentUnit, words]);
+
+  const startedWordsCount = useMemo(() => {
+    return wordsInUnit.filter(w => progress[w.id] && progress[w.id].status !== "new").length;
+  }, [wordsInUnit, progress]);
+
+  const dailyCompletionPercentage = useMemo(() => {
+    if (!currentUnit) return 0;
+    if (currentUnit.completed) return 100;
+    const total = wordsInUnit.length;
+    if (total === 0) return 0;
+    return Math.min(100, Math.max(0, Math.round((startedWordsCount / total) * 100)));
+  }, [currentUnit, wordsInUnit, startedWordsCount]);
 
   // 1. Calculate General Stats
   const stats = useMemo(() => {
@@ -607,9 +621,10 @@ export default function Dashboard({
               <h4 className="text-xs font-black uppercase tracking-wider text-blue-400">{inAppNotification.title}</h4>
               <p className="text-xs text-slate-200 mt-1 font-semibold leading-relaxed">{inAppNotification.body}</p>
             </div>
-            <button
+            <button 
               onClick={() => setInAppNotification(prev => ({ ...prev, show: false }))}
-              className="text-slate-400 hover:text-white p-1 hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white cursor-pointer ml-1 shrink-0"
+              title="Đóng"
             >
               <X className="w-4 h-4" />
             </button>
@@ -656,9 +671,9 @@ export default function Dashboard({
             </p>
           </div>
 
-          {/* List of word preview badges */}
+          {/* Desktop/Tablet words preview list */}
           {currentUnit && wordsInUnit && wordsInUnit.length > 0 && (
-            <div className="space-y-1.5 pt-1">
+            <div className="hidden md:block space-y-1.5 pt-1">
               <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest flex items-center gap-1">
                 <span>🎯</span> Mục tiêu từ vựng hôm nay:
               </p>
@@ -676,10 +691,78 @@ export default function Dashboard({
               </div>
             </div>
           )}
+
+          {/* Mobile Hero section content: Progress details, bar, and circles (Mobile < 768px) */}
+          {currentUnit && (
+            <div className="md:hidden space-y-4 pt-2 border-t border-slate-800/40">
+              {/* Progress details */}
+              <div className="flex justify-between items-center text-xs font-bold">
+                <span className="text-slate-300">Tiến độ hôm nay</span>
+                <span className="text-slate-350">{dailyCompletionPercentage}% ({startedWordsCount}/{wordsInUnit.length} từ)</span>
+              </div>
+              
+              {/* Progress bar */}
+              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-white transition-all duration-500" 
+                  style={{ width: `${dailyCompletionPercentage}%` }}
+                />
+              </div>
+
+              {/* Study Flow Timeline Circles */}
+              <div className="flex items-center justify-between px-1 py-2">
+                {[
+                  { id: "learn", label: "Learn", icon: BookOpen },
+                  { id: "quiz", label: "Quiz", icon: Check },
+                  { id: "speak", label: "Speak", icon: Mic },
+                  { id: "shadow", label: "Shadow", icon: Volume2 },
+                  { id: "review", label: "Review", icon: RefreshCw }
+                ].map((step, idx) => {
+                  // Compute state: completed, active, locked
+                  const stepThreshold = (idx + 1) * 20;
+                  const isCompleted = dailyCompletionPercentage >= stepThreshold;
+                  const isActive = dailyCompletionPercentage >= (idx * 20) && dailyCompletionPercentage < stepThreshold;
+                  
+                  // Style configurations matching mockup
+                  let circleClass = "";
+                  let iconElement;
+
+                  if (isCompleted) {
+                    if (idx === 0) {
+                      circleClass = "bg-white text-blue-600 border border-slate-200 shadow-sm";
+                      iconElement = <BookOpen className="w-4.5 h-4.5 text-blue-600" />;
+                    } else {
+                      circleClass = "bg-white text-emerald-500 border border-emerald-500 shadow-sm";
+                      iconElement = <Check className="w-4.5 h-4.5 text-emerald-500 stroke-[3px]" />;
+                    }
+                  } else if (isActive) {
+                    circleClass = "bg-white text-amber-500 border-2 border-amber-500 shadow-md ring-4 ring-amber-500/10";
+                    iconElement = <step.icon className="w-4.5 h-4.5 text-amber-500" />;
+                  } else {
+                    circleClass = "bg-white/10 text-white/35 border border-white/5";
+                    iconElement = <step.icon className="w-4.5 h-4.5 text-white/35" />;
+                  }
+
+                  return (
+                    <React.Fragment key={step.id}>
+                      <div className="flex flex-col items-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${circleClass}`}>
+                          {iconElement}
+                        </div>
+                      </div>
+                      {idx < 4 && (
+                        <div className="text-slate-700 text-xs font-mono font-bold">&rarr;</div>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Unified Primary CTA on the Right */}
-        <div className="relative z-10 flex flex-col justify-center items-stretch sm:items-start lg:items-end shrink-0 gap-3">
+        {/* Unified Primary CTA on the Right (hidden on mobile, shown on md:) */}
+        <div className="hidden md:flex relative z-10 flex-col justify-center items-stretch sm:items-start lg:items-end shrink-0 gap-3">
           <button
             onClick={() => {
               if (currentUnit) {
@@ -702,13 +785,30 @@ export default function Dashboard({
             Lộ trình cá nhân hóa đồng bộ Database
           </div>
         </div>
+
+        {/* Mobile Large CTA: Continue Learning (shown only on mobile < 768px) */}
+        <div className="md:hidden relative z-10 w-full">
+          <button
+            onClick={() => {
+              if (currentUnit) {
+                setActiveLessonUnit(currentUnit);
+              } else {
+                onQuickPractice("srs", "due");
+              }
+            }}
+            className="w-full py-4.5 bg-white hover:bg-slate-50 text-blue-600 font-extrabold text-sm rounded-2xl flex items-center justify-center gap-2.5 shadow-md active:scale-98 transition-all cursor-pointer"
+          >
+            <span>Continue Learning</span>
+            <ChevronRight className="w-4.5 h-4.5" />
+          </button>
+        </div>
       </div>
 
       {/* Bento Grid layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
         
         {/* CARD 1: Learning Progress (5 columns) */}
-        <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-6">
+        <div className="md:col-span-1 lg:col-span-5 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-800 tracking-tight uppercase flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-500"></span>
@@ -798,7 +898,7 @@ export default function Dashboard({
         </div>
 
         {/* CARD 3: Learning Streak GitHub heatmap (4 columns) */}
-        <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-4">
+        <div className="md:col-span-1 lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
           <div>
             <h3 className="text-sm font-bold text-slate-800 tracking-tight uppercase flex items-center gap-2">
               <Flame className="w-4 h-4 text-amber-500" />
@@ -863,7 +963,7 @@ export default function Dashboard({
         </div>
 
         {/* CARD 2: Today's Review Checklist (3 columns) */}
-        <div className="lg:col-span-3 bg-white p-6 rounded-3xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-4">
+        <div className="md:col-span-1 lg:col-span-3 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
           <div>
             <h3 className="text-sm font-bold text-slate-800 tracking-tight uppercase flex items-center gap-2">
               <Calendar className="w-4 h-4 text-blue-500" />
@@ -922,7 +1022,7 @@ export default function Dashboard({
         </div>
 
         {/* CARD 4: Quick Practice 4 Equal subcards (12 columns full width row) */}
-        <div className="lg:col-span-12 space-y-3">
+        <div className="md:col-span-2 lg:col-span-12 space-y-3">
           <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Quick Practice</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
@@ -976,9 +1076,9 @@ export default function Dashboard({
         </div>
 
         {/* CARD 5: Today's Vocabulary Table (8 columns) */}
-        <div className="lg:col-span-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-4">
+        <div className="md:col-span-2 lg:col-span-8 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-800 tracking-tight uppercase flex items-center gap-2">
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight uppercase flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-500"></span>
               Từ vựng mới hôm nay
             </h3>
@@ -990,7 +1090,8 @@ export default function Dashboard({
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Desktop/Tablet Table view */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 text-xxs font-bold text-slate-400 uppercase tracking-wider">
@@ -1059,10 +1160,80 @@ export default function Dashboard({
               </tbody>
             </table>
           </div>
+
+          {/* Table fallback cards for Mobile (< 768px) */}
+          <div className="md:hidden space-y-3.5">
+            {todaysVocabulary.map((word) => {
+              const p = progress[word.id];
+              const isFav = p?.isStarred;
+              const status = p?.status || "new";
+              const mastery = status === "mastered" ? 100 : status === "learning" ? 50 : 0;
+              
+              return (
+                <div
+                  key={word.id}
+                  onClick={() => handleRowClick(word)}
+                  className="bg-white dark:bg-slate-900 p-4.5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xxs cursor-pointer flex flex-col gap-3.5 hover:border-slate-200 dark:hover:border-slate-700 transition-all"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">{word.word}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{word.ipa}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                        {word.band === "0.0-4.0" ? "v." : word.band === "4.5-5.5" ? "adj." : "n."} &bull; Topic: {word.topic}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => speak(e, word.word)}
+                        className="p-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100 transition-colors border border-blue-100/40 dark:border-indigo-900/30 cursor-pointer"
+                        title="Nghe phát âm"
+                      >
+                        <Volume2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => toggleFav(e, word.id)}
+                        className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                          isFav 
+                            ? "bg-amber-50 dark:bg-amber-950/40 text-amber-500 border-amber-200" 
+                            : "bg-slate-50 dark:bg-slate-850 text-slate-300 hover:text-amber-500 hover:border-amber-200 border-slate-200"
+                        }`}
+                        title="Yêu thích"
+                      >
+                        <Star className={`w-4 h-4 ${isFav ? "fill-amber-400 text-amber-500" : ""}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-normal">{word.meaning}</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase">
+                      <span>Mastery Progress</span>
+                      <span className="font-extrabold text-slate-650 dark:text-slate-300">{mastery}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-500 ${
+                          status === "mastered" ? "bg-emerald-500" : status === "learning" ? "bg-blue-500" : "bg-slate-300"
+                        }`} 
+                        style={{ width: `${mastery}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* CARD 5b: Learning Reminders & Streak Guard (4 columns) */}
-        <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-6" id="learning-reminders-card">
+        <div className="md:col-span-1 lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-6" id="learning-reminders-card">
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-slate-800 tracking-tight uppercase flex items-center gap-2">
               <Bell className="w-4 h-4 text-blue-500 animate-swing" />
@@ -1196,7 +1367,7 @@ export default function Dashboard({
         {showExtendedStats && (
           <>
             {/* CARD 6: Topic Progress Doughnut Chart (4 columns) */}
-        <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-4">
+        <div className="md:col-span-1 lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-800 tracking-tight uppercase flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-500"></span>
@@ -1246,7 +1417,7 @@ export default function Dashboard({
         </div>
 
         {/* CARD 7: Words Needing Review Horizontal List (8 columns) */}
-        <div className="lg:col-span-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-4">
+        <div className="md:col-span-2 lg:col-span-8 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-800 tracking-tight uppercase flex items-center gap-2">
               <RefreshCw className="w-4 h-4 text-emerald-500 animate-spin-slow" />
@@ -1304,7 +1475,7 @@ export default function Dashboard({
         </div>
 
         {/* CARD 8: Band Prediction Line Chart (4 columns) */}
-        <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-4">
+        <div className="md:col-span-1 lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-800 tracking-tight uppercase flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-indigo-500" />
@@ -1347,7 +1518,7 @@ export default function Dashboard({
         </div>
 
         {/* CARD 9: Achievements (6 columns) */}
-        <div className="lg:col-span-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-4">
+        <div className="md:col-span-1 lg:col-span-6 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
           <div>
             <h3 className="text-sm font-bold text-slate-800 tracking-tight uppercase flex items-center gap-2">
               <Award className="w-4 h-4 text-amber-500" />
@@ -1379,7 +1550,7 @@ export default function Dashboard({
         </div>
 
         {/* CARD 10: Upcoming Goal progress (6 columns) */}
-        <div className="lg:col-span-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-4">
+        <div className="md:col-span-1 lg:col-span-6 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
           <div>
             <h3 className="text-sm font-bold text-slate-800 tracking-tight uppercase flex items-center gap-2">
               <Sliders className="w-4 h-4 text-emerald-500" />

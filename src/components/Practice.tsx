@@ -1457,146 +1457,229 @@ export default function Practice({
 
           <div className="space-y-2">
             <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Hoặc luyện tập công cụ riêng lẻ</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {/* Desktop/Tablet Grid View */}
+            <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             
-            {/* 1. Anki Spaced Repetition Card */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-6">
-              <div className="space-y-3">
-                <div className="w-12 h-12 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl flex items-center justify-center">
-                  <BookOpen className="w-6 h-6" />
+              {/* 1. Anki Spaced Repetition Card */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-6">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl flex items-center justify-center">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-slate-800">Flashcard SRS (Anki)</h4>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                      Học từ vựng lặp lại ngắt quãng bằng thuật toán SM-2. Tự động nhắc nhở ôn tập đúng ngày dựa trên độ nhớ.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-base font-bold text-slate-800">Flashcard SRS (Anki)</h4>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    Học từ vựng lặp lại ngắt quãng bằng thuật toán SM-2. Tự động nhắc nhở ôn tập đúng ngày dựa trên độ nhớ.
-                  </p>
+
+                {/* Deck choosing buttons */}
+                <div className="space-y-2 pt-2 border-t border-slate-50">
+                  <button
+                    onClick={() => initializeSRS("all")}
+                    className="w-full py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors flex items-center justify-between px-4 cursor-pointer"
+                  >
+                    <span>Mở Hộp Flashcard (Khuyên học)</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => initializeSRS("due")}
+                      disabled={dueCount === 0}
+                      className="py-2 border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:hover:bg-white cursor-pointer"
+                    >
+                      Ôn từ cũ ({dueCount})
+                    </button>
+                    <button
+                      onClick={() => initializeSRS("new")}
+                      disabled={newCount === 0}
+                      className="py-2 border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:hover:bg-white cursor-pointer"
+                    >
+                      Nạp từ mới ({newCount})
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Deck choosing buttons */}
-              <div className="space-y-2 pt-2 border-t border-slate-50">
+              {/* 2. Choose Correct meaning / Listen choose */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-6">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl flex items-center justify-center">
+                    <Volume2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-slate-800">Nghe & Trắc Nghiệm</h4>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                      Đề bài đọc to từ bằng giọng nói bản xứ (US/UK), người học nghe và chọn nghĩa phù hợp nhất. Tăng phản xạ Nghe cực tốt!
+                    </p>
+                  </div>
+                </div>
+
                 <button
-                  onClick={() => initializeSRS("all")}
+                  onClick={startQuiz}
+                  className="w-full py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-between px-4 cursor-pointer"
+                >
+                  <span>Bắt đầu Trắc Nghiệm (10 câu)</span>
+                  <Play className="w-4 h-4 fill-white text-white" />
+                </button>
+              </div>
+
+              {/* 3. Fill in the Blank (Spelling/Sentence context) */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-6">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl flex items-center justify-center">
+                    <ListOrdered className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-slate-800">Điền Câu Ví Dụ</h4>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                      Đọc câu ví dụ học thuật bị khuyết và gõ từ vựng đúng để hoàn tất câu. Thử thách khả năng nhớ ngữ cảnh và đúng chính tả.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={startFillBlank}
+                  className="w-full py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-between px-4 cursor-pointer"
+                >
+                  <span>Bắt đầu Điền Từ (10 câu)</span>
+                  <Play className="w-4 h-4 fill-white text-white" />
+                </button>
+              </div>
+
+              {/* 4. Speaking Practice Card (AI Pronunciation check) */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-6">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl flex items-center justify-center">
+                    <Mic className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-slate-800">Luyện Nói Phát Âm</h4>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                      Nói trực tiếp từ vựng qua Microphone và nhận đánh giá phát âm AI theo thời gian thực. Tối ưu kỹ năng phát âm IELTS chuẩn!
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={startSpeaking}
+                  className="w-full py-2 bg-rose-600 text-white text-xs font-bold rounded-xl hover:bg-rose-700 transition-colors flex items-center justify-between px-4 cursor-pointer"
+                >
+                  <span>Bắt đầu Phát Âm (5 từ)</span>
+                  <Play className="w-4 h-4 fill-white text-white" />
+                </button>
+              </div>
+
+              {/* 5. Shadowing Practice Card (IELTS 3 Parts) */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-6">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-indigo-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-slate-800 font-sans tracking-tight">Luyện Shadowing</h4>
+                    <span className="text-[9px] bg-indigo-50 text-indigo-600 font-extrabold uppercase px-2 py-0.5 rounded border border-indigo-100">
+                      Mới • IELTS 3 Parts
+                    </span>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                      Nhại lại các câu hỏi/độc thoại IELTS chuẩn mẫu theo nhịp điệu bản xứ và nhận đánh giá 3 tín hiệu chuẩn xác.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => startShadowingMode(1)}
                   className="w-full py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors flex items-center justify-between px-4 cursor-pointer"
                 >
-                  <span>Mở Hộp Flashcard (Khuyên học)</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <span>Bắt đầu Shadowing</span>
+                  <Play className="w-4 h-4 fill-white text-white" />
                 </button>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => initializeSRS("due")}
-                    disabled={dueCount === 0}
-                    className="py-2 border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:hover:bg-white cursor-pointer"
-                  >
-                    Ôn từ đến hạn ({dueCount})
-                  </button>
-                  <button
-                    onClick={() => initializeSRS("new")}
-                    disabled={newCount === 0}
-                    className="py-2 border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:hover:bg-white cursor-pointer"
-                  >
-                    Nạp từ mới ({newCount})
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Choose Correct meaning / Listen choose */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-6">
-              <div className="space-y-3">
-                <div className="w-12 h-12 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl flex items-center justify-center">
-                  <Volume2 className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-base font-bold text-slate-800">Nghe & Trắc Nghiệm</h4>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    Đề bài đọc to từ bằng giọng nói bản xứ (US/UK), người học nghe và chọn nghĩa phù hợp nhất. Tăng phản xạ Nghe cực tốt!
-                  </p>
-                </div>
               </div>
 
-              <button
-                onClick={startQuiz}
-                className="w-full py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-between px-4 cursor-pointer"
-              >
-                <span>Bắt đầu Trắc Nghiệm (10 câu)</span>
-                <Play className="w-4 h-4 fill-white text-white" />
-              </button>
             </div>
 
-            {/* 3. Fill in the Blank (Spelling/Sentence context) */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-6">
-              <div className="space-y-3">
-                <div className="w-12 h-12 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl flex items-center justify-center">
-                  <ListOrdered className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-base font-bold text-slate-800">Điền Câu Ví Dụ</h4>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    Đọc câu ví dụ học thuật bị khuyết và gõ từ vựng đúng để hoàn tất câu. Thử thách khả năng nhớ ngữ cảnh và đúng chính tả.
-                  </p>
-                </div>
+            {/* Mobile Duolingo Study Path View */}
+            <div className="md:hidden flex flex-col items-center py-8 relative w-full overflow-hidden bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-150 dark:border-slate-850 shadow-xxs">
+              {/* Dotted connecting line */}
+              <div className="absolute top-16 bottom-24 left-1/2 -translate-x-1/2 w-1 border-l-4 border-dashed border-slate-200 dark:border-slate-800 z-0" />
+
+              <div className="space-y-12 relative z-10 w-full px-4">
+                {[
+                  { 
+                    id: "srs", 
+                    name: "Flashcard SRS", 
+                    desc: "Học thẻ nhớ lặp lại ngắt quãng", 
+                    icon: BookOpen, 
+                    color: "bg-amber-500 text-white shadow-amber-500/20",
+                    offset: "-translate-x-6",
+                    action: () => initializeSRS("all")
+                  },
+                  { 
+                    id: "quiz", 
+                    name: "Trắc Nghiệm Phản Xạ", 
+                    desc: "Game phản xạ nghĩa và điền từ", 
+                    icon: Volume2, 
+                    color: "bg-blue-500 text-white shadow-blue-500/20",
+                    offset: "translate-x-0",
+                    action: startQuiz
+                  },
+                  { 
+                    id: "dictation", 
+                    name: "Luyện Chính Tả", 
+                    desc: "Nghe viết chính tả câu hoàn chỉnh", 
+                    icon: ListOrdered, 
+                    color: "bg-emerald-500 text-white shadow-emerald-500/20",
+                    offset: "translate-x-6",
+                    action: startFillBlank
+                  },
+                  { 
+                    id: "speaking", 
+                    name: "Phát Âm AI (IPA)", 
+                    desc: "Chấm điểm nói chuẩn xác từng âm", 
+                    icon: Mic, 
+                    color: "bg-rose-500 text-white shadow-rose-500/20",
+                    offset: "translate-x-0",
+                    action: startSpeaking
+                  },
+                  { 
+                    id: "shadowing", 
+                    name: "Shadowing IELTS", 
+                    desc: "Đuổi theo phát âm câu dài bản xứ", 
+                    icon: Sparkles, 
+                    color: "bg-indigo-500 text-white shadow-indigo-500/20",
+                    offset: "-translate-x-6",
+                    action: () => startShadowingMode(1)
+                  }
+                ].map((step, idx) => {
+                  const IconComponent = step.icon;
+                  return (
+                    <div key={step.id} className={`flex flex-col items-center justify-center transform ${step.offset} transition-transform`}>
+                      
+                      {/* Circle Node */}
+                      <button
+                        onClick={step.action}
+                        className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer relative ring-6 ring-white dark:ring-slate-900 ${step.color}`}
+                      >
+                        <IconComponent className="w-7 h-7" />
+                        
+                        {/* Step Number Badge */}
+                        <span className="absolute -top-1 -right-1 bg-slate-900 text-white text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center border border-white dark:border-slate-800">
+                          {idx + 1}
+                        </span>
+                      </button>
+
+                      {/* Label Box */}
+                      <div className="text-center mt-2.5 max-w-[160px] bg-white dark:bg-slate-950 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-xxs">
+                        <span className="text-[11px] font-extrabold text-slate-800 dark:text-slate-100 block truncate">{step.name}</span>
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500 block leading-tight mt-0.5 line-clamp-2">{step.desc}</span>
+                      </div>
+
+                    </div>
+                  );
+                })}
               </div>
-
-              <button
-                onClick={startFillBlank}
-                className="w-full py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-between px-4 cursor-pointer"
-              >
-                <span>Bắt đầu Điền Từ (10 câu)</span>
-                <Play className="w-4 h-4 fill-white text-white" />
-              </button>
             </div>
-
-            {/* 4. Speaking Practice Card (AI Pronunciation check) */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-6">
-              <div className="space-y-3">
-                <div className="w-12 h-12 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl flex items-center justify-center">
-                  <Mic className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-base font-bold text-slate-800">Luyện Nói Phát Âm</h4>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    Nói trực tiếp từ vựng qua Microphone và nhận đánh giá phát âm AI theo thời gian thực. Tối ưu kỹ năng phát âm IELTS chuẩn!
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={startSpeaking}
-                className="w-full py-2 bg-rose-600 text-white text-xs font-bold rounded-xl hover:bg-rose-700 transition-colors flex items-center justify-between px-4 cursor-pointer"
-              >
-                <span>Bắt đầu Phát Âm (5 từ)</span>
-                <Play className="w-4 h-4 fill-white text-white" />
-              </button>
-            </div>
-
-            {/* 5. Shadowing Practice Card (IELTS 3 Parts) */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-6">
-              <div className="space-y-3">
-                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-indigo-500" />
-                </div>
-                <div>
-                  <h4 className="text-base font-bold text-slate-800 font-sans tracking-tight">Luyện Shadowing</h4>
-                  <span className="text-[9px] bg-indigo-50 text-indigo-600 font-extrabold uppercase px-2 py-0.5 rounded border border-indigo-100">
-                    Mới • IELTS 3 Parts
-                  </span>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    Nhại lại các câu hỏi/độc thoại IELTS chuẩn mẫu theo nhịp điệu bản xứ và nhận đánh giá 3 tín hiệu chuẩn xác.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => startShadowingMode(1)}
-                className="w-full py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors flex items-center justify-between px-4 cursor-pointer"
-              >
-                <span>Bắt đầu Shadowing</span>
-                <Play className="w-4 h-4 fill-white text-white" />
-              </button>
-            </div>
-
-          </div>
           </div>
         </div>
       )}

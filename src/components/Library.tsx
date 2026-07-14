@@ -41,13 +41,23 @@ interface LibraryProps {
   onStartReview: (word: Word) => void;
   onToggleStar?: (wordId: string) => void;
   learningPlan?: LearningPlan | null;
+  initialSearchQuery?: string;
+  onClearSearchQuery?: () => void;
 }
 
 export function speakWord(text: string, rate: number = 0.9, accent: "en-US" | "en-GB" = "en-US") {
   speakText(text, rate, accent);
 }
 
-export default function Library({ words, progress, onStartReview, onToggleStar, learningPlan }: LibraryProps) {
+export default function Library({ 
+  words, 
+  progress, 
+  onStartReview, 
+  onToggleStar, 
+  learningPlan,
+  initialSearchQuery = "",
+  onClearSearchQuery
+}: LibraryProps) {
   // Advanced States
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -87,6 +97,38 @@ export default function Library({ words, progress, onStartReview, onToggleStar, 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20; // 20 per page feels more premium and fits better than 24
 
+  // Sync global search query prop
+  useEffect(() => {
+    if (initialSearchQuery !== undefined) {
+      setSearchQuery(initialSearchQuery);
+      if (initialSearchQuery) {
+        setActiveCollection("all");
+      }
+    }
+  }, [initialSearchQuery]);
+
+  // Sync voice accent with settings localStorage & custom event
+  useEffect(() => {
+    const handleAccentChange = () => {
+      const saved = localStorage.getItem("lexiband_accent");
+      if (saved === "en-US" || saved === "en-GB") {
+        setVoiceAccent(saved);
+      }
+    };
+    handleAccentChange();
+
+    window.addEventListener("accent_changed", handleAccentChange);
+    return () => {
+      window.removeEventListener("accent_changed", handleAccentChange);
+    };
+  }, []);
+
+  const updateAccent = (newAccent: "en-US" | "en-GB") => {
+    setVoiceAccent(newAccent);
+    localStorage.setItem("lexiband_accent", newAccent);
+    window.dispatchEvent(new Event("accent_changed"));
+  };
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedBand, selectedTopic, selectedPos, selectedCefr, selectedOxford, selectedAwl, selectedStatus, activeCollection, sortBy]);
@@ -99,6 +141,7 @@ export default function Library({ words, progress, onStartReview, onToggleStar, 
 
   // Filter & Sort panel toggle
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Sync recent searches to localstorage
   const saveRecentSearch = (query: string) => {
@@ -292,7 +335,10 @@ export default function Library({ words, progress, onStartReview, onToggleStar, 
             />
             {searchQuery && (
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={() => {
+                  setSearchQuery("");
+                  onClearSearchQuery?.();
+                }}
                 className="absolute inset-y-0 right-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
               >
                 <X className="w-4.5 h-4.5" />
@@ -301,11 +347,27 @@ export default function Library({ words, progress, onStartReview, onToggleStar, 
           </div>
 
           {/* Quick Configs Toolbar */}
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0 w-full md:w-auto justify-between md:justify-end">
+            {/* Mobile Filters Toggle */}
+            <button
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className={`md:hidden px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${
+                showMobileFilters || selectedBand !== "All" || selectedTopic !== "All" || sortBy !== "alphabet-asc" || selectedPos !== "All" || selectedCefr !== "All" || selectedOxford !== "All" || selectedAwl !== "All"
+                  ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900"
+                  : "bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-750"
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              <span>Bộ lọc & Sắp xếp</span>
+              {(selectedBand !== "All" || selectedTopic !== "All" || sortBy !== "alphabet-asc" || selectedPos !== "All" || selectedCefr !== "All" || selectedOxford !== "All" || selectedAwl !== "All") && (
+                <span className="w-2 h-2 bg-indigo-600 rounded-full" />
+              )}
+            </button>
+
             {/* Advanced Filters Toggle */}
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${
+              className={`hidden md:flex px-4 py-2.5 rounded-xl text-xs font-bold items-center gap-2 border transition-all cursor-pointer ${
                 showAdvancedFilters || selectedPos !== "All" || selectedCefr !== "All" || selectedOxford !== "All" || selectedAwl !== "All"
                   ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900"
                   : "bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-750"
@@ -321,7 +383,7 @@ export default function Library({ words, progress, onStartReview, onToggleStar, 
             {/* Accent Toggle */}
             <div className="bg-slate-100 dark:bg-slate-850 p-1 rounded-xl flex border border-slate-200 dark:border-slate-750 shrink-0">
               <button
-                onClick={() => setVoiceAccent("en-US")}
+                onClick={() => updateAccent("en-US")}
                 className={`px-3 py-1.5 text-[10px] font-extrabold rounded-lg transition-all cursor-pointer ${
                   voiceAccent === "en-US" 
                     ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-white shadow-xs" 
@@ -331,7 +393,7 @@ export default function Library({ words, progress, onStartReview, onToggleStar, 
                 US (Mỹ)
               </button>
               <button
-                onClick={() => setVoiceAccent("en-GB")}
+                onClick={() => updateAccent("en-GB")}
                 className={`px-3 py-1.5 text-[10px] font-extrabold rounded-lg transition-all cursor-pointer ${
                   voiceAccent === "en-GB" 
                     ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-white shadow-xs" 
@@ -416,7 +478,7 @@ export default function Library({ words, progress, onStartReview, onToggleStar, 
         )}
 
         {/* Basic Filters row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+        <div className={`${showMobileFilters ? "grid" : "hidden"} md:grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800`}>
           <div className="space-y-1">
             <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
               <Award className="w-3.5 h-3.5 text-blue-500" /> IELTS Band Mục tiêu
@@ -467,6 +529,19 @@ export default function Library({ words, progress, onStartReview, onToggleStar, 
             </select>
           </div>
         </div>
+
+        {/* On mobile, show a small button to toggle advanced filters */}
+        {showMobileFilters && (
+          <div className="md:hidden flex justify-end pt-2">
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 cursor-pointer"
+            >
+              <SlidersHorizontal className="w-3 h-3" />
+              {showAdvancedFilters ? "Ẩn lọc nâng cao" : "Hiện lọc nâng cao"}
+            </button>
+          </div>
+        )}
 
         {/* Advanced Filters Panel */}
         <AnimatePresence>
@@ -594,7 +669,7 @@ export default function Library({ words, progress, onStartReview, onToggleStar, 
       {/* Word Cards Grid */}
       {processedWords.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-5">
             {paginatedWords.map((word) => {
               const p = progress[word.id];
               const status = p ? p.status : "new";
@@ -627,29 +702,29 @@ export default function Library({ words, progress, onStartReview, onToggleStar, 
                       </div>
                       
                       {/* Action buttons */}
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         {onToggleStar && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               onToggleStar(word.id);
                             }}
-                            className={`p-2 rounded-xl transition-all border ${
+                            className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl transition-all border ${
                               isFav 
                                 ? "bg-amber-50 border-amber-200 text-amber-500 hover:bg-amber-100 dark:bg-amber-950/40 dark:border-amber-900 dark:text-amber-400" 
                                 : "bg-slate-50 dark:bg-slate-850 border-slate-100 dark:border-slate-800 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                             }`}
                             title="Lưu từ vựng"
                           >
-                            <Star className={`w-3.5 h-3.5 ${isFav ? "fill-amber-400 text-amber-500" : ""}`} />
+                            <Star className={`w-4 h-4 ${isFav ? "fill-amber-400 text-amber-500" : ""}`} />
                           </button>
                         )}
                         <button
                           onClick={(e) => handlePlayTTS(e, word.word)}
-                          className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors border border-indigo-100/40 dark:border-indigo-900/30 cursor-pointer"
+                          className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors border border-indigo-100/40 dark:border-indigo-900/30 cursor-pointer"
                           title="Nghe phát âm"
                         >
-                          <Volume2 className="w-3.5 h-3.5" />
+                          <Volume2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -665,8 +740,24 @@ export default function Library({ words, progress, onStartReview, onToggleStar, 
                     </p>
                   </div>
 
+                  {/* Mastery Progress Bar */}
+                  <div className="space-y-1 pt-3 border-t border-slate-50 dark:border-slate-800/60">
+                    <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                      <span>Độ tinh thông</span>
+                      <span className="font-extrabold text-slate-650 dark:text-slate-350">{status === "mastered" ? "100%" : status === "learning" ? "50%" : "0%"}</span>
+                    </div>
+                    <div className="w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${
+                          status === "mastered" ? "bg-emerald-500" : status === "learning" ? "bg-amber-500" : "bg-slate-200"
+                        }`} 
+                        style={{ width: status === "mastered" ? "100%" : status === "learning" ? "50%" : "0%" }}
+                      />
+                    </div>
+                  </div>
+
                   {/* Foot badges */}
-                  <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-50 dark:border-slate-800/60 flex-wrap">
+                  <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
                     <div className="flex gap-1.5 flex-wrap">
                       <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${bConfig?.color || "bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-350"}`}>
                         {formatIELTSBand(word.band)}

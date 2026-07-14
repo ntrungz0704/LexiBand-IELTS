@@ -24,7 +24,8 @@ import {
   Copy,
   Maximize2,
   Minimize2,
-  Plus
+  Plus,
+  X
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Word } from "../types";
@@ -170,6 +171,8 @@ export default function Writing({ words, user }: WritingProps) {
   // Distraction-Free & Rich Editor Helpers
   const [isDistractionFree, setIsDistractionFree] = useState(false);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const [mobileTab, setMobileTab] = useState<"essay" | "feedback">("essay");
+  const [showPromptDrawer, setShowPromptDrawer] = useState(false);
 
   const handleFormatText = (formatType: "bold" | "italic" | "bullet" | "number" | "quote") => {
     if (!textareaRef.current) return;
@@ -497,19 +500,46 @@ export default function Writing({ words, user }: WritingProps) {
       <AnimatePresence mode="wait">
         {/* VIEW 1: TASK 2 PRACTICE */}
         {activeSubTab === "task2" && (
-          <motion.div
-            key="task2-view"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.25 }}
-            className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start"
-          >
+          <div className="space-y-4">
+            {/* Mobile Tab Switcher when feedback is active */}
+            {essayFeedback && (
+              <div className="flex border border-slate-200 dark:border-slate-800 md:hidden bg-slate-50 dark:bg-slate-900 p-1 rounded-xl shadow-xxs">
+                <button 
+                  onClick={() => setMobileTab("essay")}
+                  className={`flex-1 py-2 text-center text-xs font-black rounded-lg transition-all cursor-pointer ${
+                    mobileTab === "essay" 
+                      ? "bg-white dark:bg-slate-950 text-blue-600 dark:text-white shadow-xs border border-slate-200/50 dark:border-slate-800" 
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
+                  }`}
+                >
+                  Bài Viết Chữa Lỗi
+                </button>
+                <button 
+                  onClick={() => setMobileTab("feedback")}
+                  className={`flex-1 py-2 text-center text-xs font-black rounded-lg transition-all cursor-pointer ${
+                    mobileTab === "feedback" 
+                      ? "bg-white dark:bg-slate-950 text-blue-600 dark:text-white shadow-xs border border-slate-200/50 dark:border-slate-800" 
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
+                  }`}
+                >
+                  Báo Cáo Band Score
+                </button>
+              </div>
+            )}
+
+            <motion.div
+              key="task2-view"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25 }}
+              className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start"
+            >
             {/* LEFT AREA: SELECTOR & EDITOR */}
-            <div className={`${isDistractionFree ? "xl:col-span-12 max-w-4xl mx-auto w-full" : "xl:col-span-8"} space-y-6 transition-all duration-300`}>
+            <div className={`${isDistractionFree ? "xl:col-span-12 max-w-4xl mx-auto w-full" : "xl:col-span-8"} ${essayFeedback && mobileTab !== "essay" ? "hidden md:block" : "block"} space-y-6 transition-all duration-300`}>
               {/* Prompt selection bar */}
               {!essayFeedback && !isDistractionFree && (
-                <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-xxs space-y-4">
+                <div className="hidden md:block bg-white rounded-3xl border border-slate-100 p-5 shadow-xxs space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                       <BookOpen className="w-4 h-4 text-blue-600" />
@@ -575,8 +605,22 @@ export default function Writing({ words, user }: WritingProps) {
                 </div>
               )}
 
-              {/* Notion-Style Editor Workspace Card */}
               <div className="bg-white rounded-3xl border border-slate-200/80 shadow-md overflow-hidden flex flex-col min-h-[550px] transition-all duration-300">
+                {/* Mobile Compact Prompt Card */}
+                <div className="md:hidden bg-slate-50 p-4 border-b border-slate-100 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase text-blue-600">Đề bài: {selectedPrompt.title}</span>
+                    <button
+                      onClick={() => setShowPromptDrawer(true)}
+                      className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 cursor-pointer"
+                    >
+                      Đổi đề bài & Gợi ý
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed line-clamp-2 italic">
+                    "{selectedPrompt.prompt}"
+                  </p>
+                </div>
                 {/* Editor Top Navigation Block */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-5 py-4 bg-slate-50 border-b border-slate-100">
                   <div className="flex items-center gap-2.5">
@@ -660,7 +704,7 @@ export default function Writing({ words, user }: WritingProps) {
 
                 {/* Notion Sticky Editing Toolbar (Format controls + Quick insert shortcuts) */}
                 {!essayFeedback && (
-                  <div className="sticky top-0 z-10 bg-slate-50/90 backdrop-blur-md px-5 py-2.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 shadow-xxs">
+                  <div className="sticky md:top-0 bottom-0 z-10 bg-slate-55/95 dark:bg-slate-950/95 backdrop-blur-md px-5 py-2.5 border-t md:border-t-0 md:border-b border-slate-150 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-xxs">
                     {/* Left: Text formats */}
                     <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200/60 shadow-xxs">
                       <button
@@ -806,8 +850,14 @@ export default function Writing({ words, user }: WritingProps) {
                         }
                       }}
                       placeholder="Hãy gõ nội dung bài luận của bạn tại đây..."
-                      className="flex-1 w-full min-h-[350px] px-8 py-4 focus:outline-none text-slate-800 text-sm font-sans leading-relaxed resize-none bg-white placeholder-slate-300"
+                      className="flex-1 w-full min-h-[350px] px-8 py-4 focus:outline-none text-slate-800 text-sm font-sans leading-relaxed resize-none bg-white dark:bg-slate-900 placeholder-slate-350"
                     />
+
+                    {/* Floating Word Counter for Mobile */}
+                    <div className="md:hidden absolute bottom-24 right-4 z-20 bg-slate-950/80 backdrop-blur-md border border-slate-800 text-white font-extrabold text-[10px] px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5">
+                      <span className={wordCount >= 250 ? "text-emerald-400" : "text-amber-400"}>{wordCount}</span>
+                      <span className="text-slate-400">/ 250 w</span>
+                    </div>
 
                     {/* Footer Status Panel */}
                     <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-auto">
@@ -920,8 +970,7 @@ export default function Writing({ words, user }: WritingProps) {
               )}
             </div>
 
-            {/* RIGHT AREA: RESULTS GRID */}
-            <div className="xl:col-span-4 space-y-6">
+            <div className={`xl:col-span-4 ${essayFeedback && mobileTab !== "feedback" ? "hidden md:block" : "block"} space-y-6`}>
               {essayFeedback ? (
                 <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-xxs space-y-5">
                   <div className="text-center pb-4 border-b border-slate-100">
@@ -1038,6 +1087,7 @@ export default function Writing({ words, user }: WritingProps) {
               )}
             </div>
           </motion.div>
+          </div>
         )}
 
         {/* VIEW 2: PARAPHRASING TRAINER */}
@@ -1225,6 +1275,91 @@ export default function Writing({ words, user }: WritingProps) {
                 </motion.div>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Prompt Selector Drawer Modal */}
+      <AnimatePresence>
+        {showPromptDrawer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-end justify-center md:hidden"
+            onClick={() => setShowPromptDrawer(false)}
+          >
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="bg-white dark:bg-slate-950 w-full max-h-[85vh] rounded-t-3xl p-6 overflow-y-auto space-y-6"
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                  <BookOpen className="w-4.5 h-4.5 text-blue-600" />
+                  Chọn đề thi & Gợi ý từ vựng
+                </h3>
+                <button 
+                  onClick={() => setShowPromptDrawer(false)}
+                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-xl"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Curated Prompts */}
+              <div className="space-y-2">
+                <span className="text-[10px] font-black uppercase text-slate-400">1. Chọn đề bài luận</span>
+                <div className="grid grid-cols-1 gap-2">
+                  {CURATED_PROMPTS.map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        setSelectedPrompt(p);
+                        setEssay("");
+                        setEssayFeedback(null);
+                        setShowPromptDrawer(false);
+                      }}
+                      className={`p-3.5 text-left rounded-2xl border transition-all cursor-pointer ${
+                        selectedPrompt.id === p.id
+                          ? "bg-blue-50/70 border-blue-400 dark:bg-blue-950/40 dark:border-blue-800 text-blue-900 dark:text-blue-100"
+                          : "bg-slate-50/50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-750 dark:text-slate-350"
+                      }`}
+                    >
+                      <span className="text-[9px] font-black uppercase text-blue-600 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-950/60 rounded border border-blue-100 dark:border-blue-900/50 mr-2">{p.topic}</span>
+                      <span className="text-xs font-bold">{p.title}</span>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 leading-relaxed line-clamp-2 italic">"{p.prompt}"</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Checklist */}
+              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div>
+                  <span className="text-[10px] font-black uppercase text-slate-400">2. Gợi ý từ vựng nên dùng</span>
+                  <p className="text-[10px] text-slate-405 mt-0.5">Click để chèn nhanh từ vựng vào bài viết tại con trỏ:</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedPrompt.suggestedVocab.map((v: string, i: number) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        handleInsertText(v);
+                        setShowPromptDrawer(false);
+                      }}
+                      className="text-xs font-bold bg-slate-50 dark:bg-slate-900 hover:bg-blue-50 border border-slate-200 dark:border-slate-800 hover:border-blue-300 text-slate-650 dark:text-slate-350 px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>{v}</span>
+                      <Plus className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
