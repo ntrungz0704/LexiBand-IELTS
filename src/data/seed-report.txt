@@ -1,0 +1,30 @@
+==================================================
+   BÁO CÁO PIPELINE DỮ LIỆU TỪ VỰNG - LEXIBAND (KHO MỞ RỘNG)
+==================================================
+Thời gian hoàn thành: 2026-07-12 18:53:06
+Tổng số từ được nạp (seeding): 995
+
+1. THỐNG KÊ THEO IELTS BAND (CEFR Mapping):
+   - Band 0.0 - 4.0 (Foundation - A1/A2): 281 từ
+   - Band 4.5 - 5.5 (Intermediate - B1/AWL): 426 từ
+   - Band 6.0 - 6.5 (Competent - B2/AWL Advanced): 288 từ
+
+2. THỐNG KÊ COLLOCATIONS:
+   - Tổng số từ có Collocations (Xác minh từ ACL): 918 từ
+   - Tổng số từ KHÔNG có Collocations (Để trống theo quy tắc ACL): 77 từ
+
+3. MAPPING LOGIC & SOURCE VERIFICATION:
+   - Nguồn từ vựng: American Oxford 3000 + The Oxford 3000 by CEFR level + Academic Word List (AWL)
+   - CEFR Mapping:
+     * A1-A2 -> Band 0.0-4.0 (Foundation)
+     * B1    -> Band 4.5-5.5 (Intermediate / AWL)
+     * B2    -> Band 6.0-6.5 (Competent / AWL Advanced)
+   - Quy trình chất lượng:
+     * IPA, English definition, and example: Đồng bộ, chân thực và không tự tạo
+     * Collocations: Chỉ trích xuất các cụm thực tế từ Academic Collocation List (ACL). Từ nào không thuộc ACL được để trống [] theo đúng yêu cầu.
+     * Chủ đề (Topic): Phân loại chính xác dựa trên nghĩa thực tế (Education, Environment, Health, Technology, Crime, Urbanization, Economy, Society, General).
+
+Đường dẫn tệp đích:
+- Dữ liệu tĩnh: /src/data/vocabulary-seed.json
+- Tệp báo cáo: /src/data/seed-report.txt
+==================================================

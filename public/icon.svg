@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#1e1b4b" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  
+  <!-- Rounded Squircle Background -->
+  <rect x="32" y="32" width="448" height="448" rx="112" fill="url(#grad)" />
+  
+  <!-- Outer glowing ring / subtle border -->
+  <rect x="32" y="32" width="448" height="448" rx="112" fill="none" stroke="#ffffff" stroke-width="8" stroke-opacity="0.15" />
+
+  <!-- Stylized Book Open forming an L -->
+  <g transform="translate(106, 116)" filter="url(#shadow)">
+    <!-- Right Page (Forms the horizontal part of L and right pages) -->
+    <path d="M150 200 C 150 120, 200 100, 280 100 L 280 230 C 200 230, 150 250, 150 250 Z" fill="#ffffff" fill-opacity="0.9" />
+    
+    <!-- Left Page (Forms the vertical part of L and left pages) -->
+    <path d="M20 60 C 100 60, 150 80, 150 160 L 150 250 C 150 250, 100 190, 20 190 Z" fill="#ffffff" />
+    
+    <!-- Stylized 'L' Letter Overlay or Spine accent -->
+    <path d="M135 120 L 135 235 C 135 242, 142 245, 150 245 C 165 245, 190 238, 215 235" stroke="#1d4ed8" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    
+    <!-- Book Spine center marker -->
+    <path d="M150 160 L 150 250" stroke="#cbd5e1" stroke-width="6" stroke-linecap="round" fill="none" />
+  </g>
+</svg>

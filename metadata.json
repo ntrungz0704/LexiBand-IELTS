@@ -1,0 +1,10 @@
+{
+  "name": "LexiBand IELTS",
+  "description": "App học từ vựng IELTS theo lộ trình 0.0 - 6.5 tích hợp Spaced Repetition (SRS) và phát âm TTS",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

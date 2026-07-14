@@ -1,0 +1,136 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "The user account details, associated with their Firebase UID.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "User's email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User's display name or username."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of user creation."
+        }
+      },
+      "required": ["email", "displayName"]
+    },
+    "UserProgressDoc": {
+      "title": "User SRS Vocabulary Progress",
+      "description": "The complete vocabulary progress for SM-2 spaced repetition.",
+      "type": "object",
+      "properties": {
+        "progress": {
+          "type": "object",
+          "description": "Mapping from word ID to its spaced repetition progress parameters."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last updated timestamp."
+        }
+      },
+      "required": ["progress"]
+    },
+    "StreakDoc": {
+      "title": "User Streak Information",
+      "description": "Stores current and longest streak parameters along with practice history.",
+      "type": "object",
+      "properties": {
+        "currentStreak": {
+          "type": "integer"
+        },
+        "longestStreak": {
+          "type": "integer"
+        },
+        "lastActiveDate": {
+          "type": "string"
+        },
+        "history": {
+          "type": "object"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["currentStreak", "longestStreak", "history"]
+    },
+    "LearningPlanDoc": {
+      "title": "User Custom Learning Plan",
+      "description": "Stores the user's custom daily learning units and settings.",
+      "type": "object",
+      "properties": {
+        "startBand": {
+          "type": "string"
+        },
+        "targetBand": {
+          "type": "string"
+        },
+        "durationMonths": {
+          "type": "integer"
+        },
+        "dailyUnits": {
+          "type": "array"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["startBand", "targetBand", "durationMonths", "dailyUnits"]
+    },
+    "CustomAuth": {
+      "title": "Custom Auth Credentials",
+      "description": "Credentials storage for custom authentication fallback.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "displayName", "password"]
+    }
+  },
+  "firestore": {
+    "/custom_auth/{emailId}": {
+      "schema": "CustomAuth",
+      "description": "Fallback custom credentials storage."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile information."
+    },
+    "/users/{userId}/userData/progress": {
+      "schema": "UserProgressDoc",
+      "description": "SRS Vocabulary progress document."
+    },
+    "/users/{userId}/userData/streak": {
+      "schema": "StreakDoc",
+      "description": "User streak and history tracking document."
+    },
+    "/users/{userId}/userData/learningPlan": {
+      "schema": "LearningPlanDoc",
+      "description": "User personal learning plan and daily units."
+    }
+  }
+}
